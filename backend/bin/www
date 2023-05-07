@@ -29,14 +29,13 @@ var server = http.createServer(app);
 mongoose
   .connect(db, { useNewUrlParser: true })
   .then(() => {
-    // Use `debug` instead of `dbLogger` if you did not split the debug 
-    // console into `dbLogger` and `serverLogger` above. 
-    dbLogger("Connected to MongoDB successfully");
-    server.listen(port);
+    console.log('Connected to MongoDB successfully');
+    insertSeeds();
   })
-  // Use `debug` instead of `serverLogger` if you did not split the debug 
-  // console into `dbLogger` and `serverLogger` above.
-  .catch(err => serverLogger(err));
+  .catch(err => {
+    console.error(err.stack);
+    process.exit(1);
+  });
 // failure callback when server has trouble starting:
 server.on('error', onError);
 // success callback when server starts:
@@ -100,4 +99,21 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+}
+
+const insertSeeds = () => {
+  console.log("Resetting db and seeding users and tweets...");
+
+  User.collection.drop()
+                 .then(() => Tweet.collection.drop())
+                 .then(() => User.insertMany(users))
+                 .then(() => Tweet.insertMany(tweets))
+                 .then(() => {
+                   console.log("Done!");
+                   mongoose.disconnect();
+                 })
+                 .catch(err => {
+                   console.error(err.stack);
+                   process.exit(1);
+                 });
 }
