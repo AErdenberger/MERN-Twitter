@@ -8,8 +8,9 @@ const csurf = require('csurf');
 const { isProduction } = require('./config/keys');
 
 require('./models/User');
-require('./config/passport'); // <-- ADD THIS LINE
-const passport = require('passport'); // <-- ADD THIS LINE
+require('./config/passport');
+const passport = require('passport');
+require('./models/Tweet');
 
 const usersRouter = require('./routes/api/users');
 const tweetsRouter = require('./routes/api/tweets');
