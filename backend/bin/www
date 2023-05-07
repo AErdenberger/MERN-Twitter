@@ -3,50 +3,54 @@
 /**
  * Module dependencies.
  */
+
+const app = require('../app.js');
+const debug = require('debug');
+const http = require('http');
 const mongoose = require('mongoose');
 const { mongoURI: db } = require('../config/keys.js');
-var app = require('../app');
-var debug = require('debug')('backend:server');
-var http = require('http');
+
+const serverLogger = debug('backend:server');
+const dbLogger = debug('backend:mongodb');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5000');
+const port = normalizePort(process.env.PORT || '5000');
 app.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+const server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Connect to Mongo database, then allow the server to listen for requests
  */
-
 mongoose
   .connect(db, { useNewUrlParser: true })
   .then(() => {
-    console.log('Connected to MongoDB successfully');
-    insertSeeds();
+    dbLogger('Connected to MongoDB successfully');
+
+    /**
+     * Listen on provided port, on all network interfaces.
+     */
+
+    server.listen(port);
   })
-  .catch(err => {
-    console.error(err.stack);
-    process.exit(1);
-  });
-// failure callback when server has trouble starting:
+  .catch(err => serverLogger(err));
+
 server.on('error', onError);
-// success callback when server starts:
-server.on('listening', onListening); 
+server.on('listening', onListening);
 
 /**
  * Normalize a port into a number, string, or false.
  */
 
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  const port = parseInt(val, 10);
 
   if (isNaN(port)) {
     // named pipe
@@ -70,7 +74,7 @@ function onError(error) {
     throw error;
   }
 
-  var bind = typeof port === 'string'
+  const bind = typeof port === 'string'
     ? 'Pipe ' + port
     : 'Port ' + port;
 
@@ -98,22 +102,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-}
-
-const insertSeeds = () => {
-  console.log("Resetting db and seeding users and tweets...");
-
-  User.collection.drop()
-                 .then(() => Tweet.collection.drop())
-                 .then(() => User.insertMany(users))
-                 .then(() => Tweet.insertMany(tweets))
-                 .then(() => {
-                   console.log("Done!");
-                   mongoose.disconnect();
-                 })
-                 .catch(err => {
-                   console.error(err.stack);
-                   process.exit(1);
-                 });
+  serverLogger('Listening on ' + bind);
 }
